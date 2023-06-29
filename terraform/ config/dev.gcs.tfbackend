@@ -1,0 +1,2 @@
+bucket = "datalake-terraform"
+prefix = "staging-provider-cf-configuracao-captura-arquivos"
