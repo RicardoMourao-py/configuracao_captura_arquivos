@@ -20,15 +20,26 @@ Em primeiro momento, crie todos os serviços necessários antes da implementaç�
 
    A imagem acima configura o arquivo `filename.csv`, em que quando ele chega no `staging-provider/staging-provider-bucket/STAGE_AREA`, deve ser movido para os buckets `staging-destino/bucket-destino` (observe que staging-destino é outro projeto, mas poderia ser qualquer um outro) e `staging-provider/bucket-bkp/STAGE_AREA/PROCESSADOS`, respectivamente. Além disso, ele deve disparar o taskflow `tkf_teste` para a ETL continuar o processamento **(não obrigatório)**. 
 
-5. Antes de implementar a Cloud Function, garanta que seu arquivo [dev.gcs.tfbackend](terraform/config) esteja com as seguintes configurações: `cf_configuracao_captura_arquivos` que terá o papel detectar objetos que chegam no bucket `staging-provider-bucket` (trigger).
+5. Antes de implementar a Cloud Function, garanta um bucket, em outro projeto, que seja responsável por armazenar arquivos `.tfstate` do terraform. Portanto, crie um projeto com o nome `datalake-terraform`. Não se preocupe com o nome do bucket pois ele será criado automaticamente na execução do IaC.
+6. Agora basta clonar o repositório e executar os comandos abaixo em sequência:
+```
+export GOOGLE_APPLICATION_CREDENTIALS=${caminho do diretório onde você guardou suas chaves de segurança}
+```
+```
+cd terraform
+```
+```
+terraform init -backend-config=config/dev.gcs.tfbackend
+```
+```
+terraform plan -var-file="config/dev.tfvars" -out=.terraform_tmp/plan.create -no-color
+```
+```
+terraform apply .terraform_tmp/plan.create
+```
 
-Para continuar o processamento normal, foi criado um novo bucket de backup, `staging-provider-bucket-bkp`, para salvar os arquivos processados, com seu horário de processamento, e não ficar acionando desnecessariamente o bucket triggado. 
-
-Além disso, para uma melhor leitura da Cloud Function, é necessário criar uma tabela de configuração no Big Query, `staging-provider/DS_CONFIGURACAO/TB_CONFIGURACAO`, em que nela é possível configurar todos os campos do arquivo de configuração antigo e com o adicional do campo de talskflow.
-
-Sendo assim, o processamento normal continua, ou seja, o arquivo é mandado para o bucket de destino, salvo é em um bucket de backup que adiciona no nome do arquivo `DATA_HORA`. Caso haja talkflow para ser exucutado, ele é disparado, **EXCETO**, quando no nome do bucket de destino tem `trigger`, o que é entendido que não deve ser disparado, pois já existe um detector de eventos responsável por algo.
-
-
+7. Por fim, basta testar seu projeto.
+ 
 ## INFORMAÇÕES
 
 - Se configurar um arquivo como `.csv`, ele **DEVE** vir como `.csv` no bucket triggado. Valendo para outras extensões.
